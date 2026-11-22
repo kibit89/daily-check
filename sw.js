@@ -1,11 +1,11 @@
 /* Daily Check — offline shell */
-var CACHE = 'daily-check-v4';
+var CACHE = 'daily-check-v5';
 var ASSETS = [
   './',
   'index.html',
-  'styles.css',
-  'core.js',
-  'app.js',
+  'styles.css?v=5',
+  'core.js?v=5',
+  'app.js?v=5',
   'manifest.json',
   'icon.svg',
   'icon-192.png',

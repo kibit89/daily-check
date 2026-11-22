@@ -463,6 +463,11 @@
     if (!input || !hint || !doseCtx) return;
     var slot = slotById(doseCtx.slotId);
     if (!slot) return;
+    if (!input.value) {
+      hint.textContent = '복용한 시각을 선택해 주세요';
+      hint.className = 'time-hint';
+      return;
+    }
     var ok = DC.inWindow(slot, input.value);
     hint.textContent = ok ? '제시간 범위 안이에요 ✓' : '정시 범위를 벗어나요 · 시간 외 복용으로 기록돼요';
     hint.className = 'time-hint ' + (ok ? 'ok' : 'warn');

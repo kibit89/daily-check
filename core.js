@@ -185,7 +185,8 @@
     };
     slots.forEach(function (s) {
       var st = slotState(s, key, dayLogs, now);
-      var pre = beforeStart || (startKey === key && st.state === 'missed' && startedAt > 0 && st.end.getTime() < startedAt);
+      var pre = st.state === 'missed' &&
+        (beforeStart || (startKey === key && startedAt > 0 && st.end.getTime() < startedAt));
       if (pre) {
         out.preStart += 1;
         out.preStartIds.push(s.id);
@@ -209,8 +210,8 @@
     out.isToday = key === logicalKey(now);
     out.isFuture = key > logicalKey(now);
     out.complete = out.total > 0 && out.taken === out.total;
-    if (beforeStart) out.tone = 'none';
-    else if (out.complete) out.tone = out.late ? 'orange' : 'green';
+    if (out.complete) out.tone = out.late ? 'orange' : 'green';
+    else if (beforeStart) out.tone = 'none';
     else if (out.isFuture) out.tone = 'future';
     else if (out.isToday) out.tone = 'progress';
     else if (startKey === key && out.taken === 0) out.tone = 'none';

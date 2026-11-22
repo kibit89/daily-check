@@ -120,6 +120,9 @@
         sub = nu.slot.name + ' · ' + (mins >= 60
           ? Math.floor(mins / 60) + '시간 ' + (mins % 60 ? (mins % 60) + '분 ' : '') + '뒤'
           : mins + '분 뒤');
+      } else if (sum.skipped > 0) {
+        headline = '오늘 남은 시간대가 없어요';
+        sub = sum.taken + '개 복용 · ' + sum.skipped + '개 건너뜀';
       } else {
         headline = '오늘 남은 시간대가 없어요';
         sub = sum.taken + '개를 기록했어요';
@@ -229,6 +232,7 @@
     var todayKey = DC.logicalKey(now);
     var todayDate = DC.logicalDate(now);
     var isThisMonth = ui.cal.y === todayDate.getFullYear() && ui.cal.m === todayDate.getMonth();
+    if (!ui.detail && isThisMonth) ui.detail = todayKey;
 
     el('calGrid').innerHTML = cells.map(function (c) {
       var sum = DC.daySummary(c.key, state.slots, state.logs, now);
@@ -248,7 +252,7 @@
         '<span class="daynum">' + c.day + '</span>' + mark + '</button>';
     }).join('');
 
-    el('calTodayBtn').hidden = isThisMonth && ui.detail === null;
+    el('calTodayBtn').hidden = isThisMonth;
     renderDayDetail();
   }
 
@@ -362,7 +366,7 @@
 
   function notify(title, body) {
     if (!('Notification' in window) || Notification.permission !== 'granted') return;
-    var opts = { body: body, icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', tag: 'daily-check' };
+    var opts = { body: body, icon: 'icon-192.png', badge: 'icon-192.png', tag: 'daily-check' };
     if (navigator.serviceWorker && navigator.serviceWorker.getRegistration) {
       navigator.serviceWorker.getRegistration().then(function (reg) {
         if (reg && reg.showNotification) reg.showNotification(title, opts);
@@ -384,7 +388,6 @@
 
     state.slots.forEach(function (s) {
       var st = DC.slotState(s, key, dayLogs, now);
-      var k = key + '|' + s.id + '|' + st.state;
       if (st.state === 'due' && !notified[key + '|' + s.id + '|due']) {
         notify('💊 ' + s.name + ' 드실 시간이에요', DC.slotWindowText(s) + ' 안에 드시면 제시간이에요.');
         notified[key + '|' + s.id + '|due'] = Date.now();
@@ -395,7 +398,6 @@
         notified[key + '|' + s.id + '|missed'] = Date.now();
         changed = true;
       }
-      void k;
     });
 
     var cutoff = Date.now() - 1000 * 60 * 60 * 24 * 4;

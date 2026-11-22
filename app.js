@@ -127,8 +127,10 @@
         headline = '복약 기록을 시작해요';
         sub = '정해진 시간에 맞춰 체크해 보세요';
       } else {
-        headline = '오늘 남은 시간대가 없어요';
-        sub = sum.taken + '개를 기록했어요';
+        headline = '오늘은 여기까지예요';
+        sub = now.getHours() < DC.LOGICAL_START_HOUR
+          ? '새벽 4시에 새 날이 시작돼요'
+          : sum.taken + '개를 기록했어요';
       }
     }
 

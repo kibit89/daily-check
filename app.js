@@ -313,7 +313,8 @@
     box.innerHTML = '<div class="card daycard">' +
       '<div class="daycard-head"><div><strong>' + esc(DC.dayLabel(key)) + '</strong>' +
       '<span class="daycard-sub">' + esc(summaryLine) + '</span></div>' +
-      '<span class="tone-tag ' + tagCls + '">' + esc(TONE_TEXT[sum.tone]) + '</span></div>' +
+      '<span class="tone-tag ' + tagCls + '">' +
+        esc(sum.tone === 'none' && sum.taken > 0 ? '일부 기록' : TONE_TEXT[sum.tone]) + '</span></div>' +
       '<div class="detail-list">' + rows + '</div>' +
       '</div>';
   }

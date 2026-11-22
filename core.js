@@ -173,15 +173,25 @@
     return out;
   }
 
-  function daySummary(key, slots, logs, now) {
+  function daySummary(key, slots, logs, now, startedAt) {
     var dayLogs = (logs && logs[key]) || {};
+    var startKey = (typeof startedAt === 'number' && isFinite(startedAt) && startedAt > 0)
+      ? logicalKey(new Date(startedAt)) : null;
+    var beforeStart = startKey !== null && key < startKey;
     var out = {
-      key: key, taken: 0, total: slots.length, late: 0, missed: 0, skipped: 0, due: 0, upcoming: 0,
-      missedIds: [], lateIds: [], dueIds: [], skippedIds: [], rows: [], isToday: false, isFuture: false,
+      key: key, taken: 0, total: slots.length, late: 0, missed: 0, skipped: 0, due: 0, upcoming: 0, preStart: 0,
+      missedIds: [], lateIds: [], dueIds: [], skippedIds: [], preStartIds: [], rows: [], isToday: false, isFuture: false,
       complete: false, tone: 'future'
     };
     slots.forEach(function (s) {
       var st = slotState(s, key, dayLogs, now);
+      var pre = beforeStart || (startKey === key && st.state === 'missed' && startedAt > 0 && st.end.getTime() < startedAt);
+      if (pre) {
+        out.preStart += 1;
+        out.preStartIds.push(s.id);
+        out.rows.push({ slot: s, state: 'prestart', onTime: false, rec: st.rec, start: st.start, end: st.end });
+        return;
+      }
       out.rows.push({ slot: s, state: st.state, onTime: st.onTime, rec: st.rec, start: st.start, end: st.end });
       if (st.state === 'taken') {
         out.taken += 1;
@@ -199,9 +209,11 @@
     out.isToday = key === logicalKey(now);
     out.isFuture = key > logicalKey(now);
     out.complete = out.total > 0 && out.taken === out.total;
-    if (out.complete) out.tone = out.late ? 'orange' : 'green';
+    if (beforeStart) out.tone = 'none';
+    else if (out.complete) out.tone = out.late ? 'orange' : 'green';
     else if (out.isFuture) out.tone = 'future';
     else if (out.isToday) out.tone = 'progress';
+    else if (startKey === key && out.taken === 0) out.tone = 'none';
     else out.tone = 'red';
     return out;
   }
@@ -246,6 +258,7 @@
     return {
       v: 1,
       setupId: null,
+      startedAt: Date.now(),
       slots: DEFAULT_SLOTS.map(function (s, i) { return normSlot(s, i); }),
       meds: {},
       logs: {},
@@ -276,6 +289,8 @@
     var st = blankState();
     if (!raw || typeof raw !== 'object') return st;
     st.setupId = typeof raw.setupId === 'string' ? raw.setupId.slice(0, 64) : null;
+    st.startedAt = (typeof raw.startedAt === 'number' && isFinite(raw.startedAt) && raw.startedAt > 0)
+      ? raw.startedAt : null;
 
     var slots = normalizeSlots(raw.slots);
     if (slots.length) st.slots = slots;

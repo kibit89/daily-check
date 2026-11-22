@@ -89,7 +89,7 @@
   function renderToday() {
     var now = new Date();
     var key = DC.logicalKey(now);
-    var sum = DC.daySummary(key, state.slots, state.logs, now);
+    var sum = DC.daySummary(key, state.slots, state.logs, now, state.startedAt);
 
     el('todayDate').textContent = DC.dayLabel(key);
     el('todaySub').textContent = now.getHours() < DC.LOGICAL_START_HOUR
@@ -123,6 +123,9 @@
       } else if (sum.skipped > 0) {
         headline = '오늘 남은 시간대가 없어요';
         sub = sum.taken + '개 복용 · ' + sum.skipped + '개 건너뜀';
+      } else if (sum.taken === 0) {
+        headline = '복약 기록을 시작해요';
+        sub = '정해진 시간에 맞춰 체크해 보세요';
       } else {
         headline = '오늘 남은 시간대가 없어요';
         sub = sum.taken + '개를 기록했어요';
@@ -161,6 +164,7 @@
 
     if (row.state === 'taken') tag = row.onTime ? '<span class="tag ok">제시간 복용</span>' : '<span class="tag warn">시간 외 복용</span>';
     else if (row.state === 'skipped') tag = '<span class="tag">건너뜀</span>';
+    else if (row.state === 'prestart') tag = '<span class="tag">기록 전</span>';
     else if (row.state === 'due') tag = '<span class="tag due">지금</span>';
     else if (row.state === 'missed') tag = '<span class="tag miss">놓침</span>';
     else tag = '<span class="tag">예정</span>';
@@ -190,10 +194,11 @@
           '<button class="btn tiny" data-act="edit" data-id="' + esc(s.id) + '">수정</button>' +
           '<button class="btn tiny ghost" data-act="undo" data-id="' + esc(s.id) + '">취소</button>' +
         '</div>';
-    } else if (row.state === 'missed') {
+    } else if (row.state === 'missed' || row.state === 'prestart') {
       foot = '<div class="slot-actions">' +
           '<button class="btn tiny ghost" data-act="skip" data-id="' + esc(s.id) + '">건너뜀</button>' +
-          '<button class="btn primary" data-act="take" data-id="' + esc(s.id) + '">늦게 먹었어요</button>' +
+          '<button class="btn primary" data-act="take" data-id="' + esc(s.id) + '">' +
+            (row.state === 'prestart' ? '먹었어요' : '늦게 먹었어요') + '</button>' +
         '</div>';
     } else {
       foot = '<div class="slot-actions">' +
@@ -217,7 +222,8 @@
     orange: '모두 복용 · 일부 지연',
     red: '빠뜨린 시간대 있음',
     progress: '오늘 · 진행 중',
-    future: '예정'
+    future: '예정',
+    none: '기록 전'
   };
 
   function renderCalendar() {
@@ -235,7 +241,7 @@
     if (!ui.detail && isThisMonth) ui.detail = todayKey;
 
     el('calGrid').innerHTML = cells.map(function (c) {
-      var sum = DC.daySummary(c.key, state.slots, state.logs, now);
+      var sum = DC.daySummary(c.key, state.slots, state.logs, now, state.startedAt);
       var cls = ['cal-cell', 'tone-' + sum.tone];
       if (!c.inMonth) cls.push('out');
       if (c.key === todayKey) cls.push('today');
@@ -245,7 +251,7 @@
       var mark = '';
       if (sum.total) {
         if (sum.tone === 'progress') mark = '<span class="mark count">' + sum.taken + '/' + sum.total + '</span>';
-        else if (sum.tone !== 'future') mark = '<span class="mark dot"></span>';
+        else if (sum.tone !== 'future' && sum.tone !== 'none') mark = '<span class="mark dot"></span>';
       }
       return '<button type="button" class="' + cls.join(' ') + '" data-key="' + c.key + '"' +
         (c.inMonth ? '' : ' aria-hidden="true" tabindex="-1"') + '>' +
@@ -264,7 +270,7 @@
     }
     var now = new Date();
     var key = ui.detail;
-    var sum = DC.daySummary(key, state.slots, state.logs, now);
+    var sum = DC.daySummary(key, state.slots, state.logs, now, state.startedAt);
     var nowKey = DC.logicalKey(now);
 
     var tagCls = 'tone-' + sum.tone;
@@ -274,6 +280,8 @@
       if (row.state === 'taken') {
         statusTxt = (row.rec.at || '') + ' 복용' + (row.onTime ? ' · 제시간' : ' · 시간 외');
         statusCls = row.onTime ? 'ok' : 'warn';
+      } else if (row.state === 'prestart') {
+        statusTxt = '기록 전'; statusCls = '';
       } else if (row.state === 'skipped') {
         statusTxt = '건너뜀'; statusCls = '';
       } else if (row.state === 'missed') {
@@ -784,6 +792,7 @@
   }
 
   function boot() {
+    if (!state.startedAt) { state.startedAt = Date.now(); save(); }
     el('calWeekdays').innerHTML = DC.WEEKDAYS.map(function (w) { return '<span>' + w + '</span>'; }).join('');
     readSetupHash();
     bind();

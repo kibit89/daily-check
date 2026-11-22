@@ -1,5 +1,5 @@
 /* Daily Check — offline shell */
-var CACHE = 'daily-check-v3';
+var CACHE = 'daily-check-v4';
 var ASSETS = [
   './',
   'index.html',

@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="A small, private daily check-in app. Everything you record stays on your device.">
+<title>Daily Check</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="theme-color" content="#f5f6f3" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#121713" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Daily Check">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app">
+
+  <header class="appbar">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">
+        <svg viewBox="0 0 32 32" width="30" height="30"><rect x="1" y="1" width="30" height="30" rx="9" fill="currentColor"/><path d="M9.5 16.6l4.3 4.3 8.7-9.4" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
+      <h1>Daily Check</h1>
+    </div>
+    <div class="appbar-right">
+      <span class="appbar-date" id="todayDate"></span>
+      <span class="appbar-sub" id="todaySub"></span>
+    </div>
+  </header>
+
+  <main>
+    <!-- 오늘 -->
+    <section id="view-today" class="view is-active">
+      <div class="card hero" id="todayHero"></div>
+      <div id="missedNotice"></div>
+      <ul id="slotList" class="slot-list"></ul>
+      <p class="fine center">하루는 새벽 4시에 바뀌어요. 취침 전 약을 자정 넘어 드셔도 그날 밤 기록으로 남아요.</p>
+    </section>
+
+    <!-- 달력 -->
+    <section id="view-calendar" class="view">
+      <div class="card cal">
+        <div class="cal-head">
+          <button class="icon-btn" data-act="prev-month" aria-label="이전 달">
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <strong id="calTitle"></strong>
+          <button class="icon-btn" data-act="next-month" aria-label="다음 달">
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+        <div class="cal-weekdays" id="calWeekdays"></div>
+        <div class="cal-grid" id="calGrid"></div>
+        <button class="btn tiny ghost cal-today-btn" id="calTodayBtn" hidden>이번 달로</button>
+        <ul class="legend">
+          <li><i class="lg tone-green"></i>모두 제시간</li>
+          <li><i class="lg tone-orange"></i>일부 지연</li>
+          <li><i class="lg tone-red"></i>빠뜨림</li>
+          <li><i class="lg tone-progress"></i>진행 중</li>
+        </ul>
+      </div>
+      <div id="dayDetail"></div>
+    </section>
+
+    <!-- 설정 -->
+    <section id="view-settings" class="view">
+      <div class="card">
+        <h2 class="card-title">복용 시간대</h2>
+        <p class="hint">기준 시간과 ‘정시 인정’ 범위를 정해 두면 달력 색이 자동으로 계산돼요.</p>
+        <div id="slotEditor" class="slot-editor"></div>
+        <button class="btn wide" data-act="add-slot">+ 시간대 추가</button>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">시간대별 약 이름</h2>
+        <p class="hint">한 번 적어 두면 메인 화면에서 ‘먹었어요’ 버튼만 누르면 돼요.</p>
+        <div id="medEditor" class="med-editor"></div>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">알림</h2>
+        <div class="row">
+          <div>
+            <strong>복용 시간 알림</strong>
+            <p class="hint">앱이 켜져 있을 때 알려드려요</p>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="remindToggle">
+            <span class="track" aria-hidden="true"></span>
+          </label>
+        </div>
+        <p class="hint" id="permState"></p>
+        <button class="btn wide" data-act="test-notify">알림 테스트</button>
+        <p class="fine">서버 없이 동작하는 앱이라, 홈 화면에 추가한 앱을 한 번 열어 둔 동안에만 알림이 와요. 확실하게 챙기려면 폰 기본 시계 앱의 알람을 함께 맞춰 두는 게 좋아요.</p>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">홈 화면에 추가</h2>
+        <p class="hint">크롬에서 주소창 오른쪽 ⋮ → ‘홈 화면에 추가’를 누르면 주소창 없는 앱처럼 열려요.</p>
+        <button class="btn wide" id="installBtn" data-act="install" hidden>앱으로 설치</button>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">백업 · 복원</h2>
+        <p class="hint">기록은 이 폰에만 있어요. 폰을 바꾸거나 브라우저 데이터를 지우기 전에 백업해 두세요.</p>
+        <button class="btn wide" data-act="export">JSON으로 내보내기</button>
+        <label class="btn wide file-btn">JSON에서 복원하기
+          <input type="file" id="importFile" accept="application/json,.json" hidden>
+        </label>
+        <button class="btn wide danger" data-act="reset">모든 기록 지우기</button>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">이 앱에 대해</h2>
+        <p class="hint">복용 기록은 서버로 보내지 않고 이 기기의 브라우저 저장소에만 저장해요. 다른 사람이 같은 주소를 열어도 빈 앱만 보여요. 다만 브라우저 데이터를 지우거나 앱을 삭제하면 기록도 함께 사라져요.</p>
+        <p class="fine" id="verLine"></p>
+      </div>
+    </section>
+  </main>
+
+  <nav class="tabbar" aria-label="화면 이동">
+    <button class="tab is-active" data-view="today">
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 12.5l5 5 11-11" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>오늘</span>
+    </button>
+    <button class="tab" data-view="calendar">
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3.5 9.5h17M8 3.5v3M16 3.5v3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <span>달력</span>
+    </button>
+    <button class="tab" data-view="settings">
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3.6v2.2M12 18.2v2.2M4.9 7.9l1.9 1.1M17.2 15l1.9 1.1M4.9 16.1l1.9-1.1M17.2 9l1.9-1.1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <span>설정</span>
+    </button>
+  </nav>
+</div>
+
+<dialog id="doseDialog" class="sheet">
+  <button class="sheet-close" aria-label="닫기">
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <div id="doseBody"></div>
+</dialog>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script src="core.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
